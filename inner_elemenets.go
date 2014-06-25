@@ -11,7 +11,7 @@ type InnerElements interface {
 }
 
 type Registrable interface {
-	SetRegistry(Registry)
+	SetFactory(Factory)
 }
 
 type Element interface{}
@@ -23,7 +23,7 @@ type InnerXML struct {
 
 type elements struct {
 	outer    *xml.Name
-	reg      Registry
+	reg      Factory
 	elements []Element
 	rawXML   []*InnerXML
 }
@@ -36,7 +36,7 @@ func NewElemenets(outer *xml.Name) *elements {
 	}
 }
 
-func (es *elements) SetRegistry(reg Registry) {
+func (es *elements) SetFactory(reg Factory) {
 	es.reg = reg
 }
 
@@ -73,7 +73,7 @@ func (es *elements) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 
 func (es *elements) decodeElement(d *xml.Decoder, start *xml.StartElement) (interface{}, error) {
 	if es.reg == nil {
-		es.reg = NodeRegistry
+		es.reg = NodeFactory
 	}
 
 	if es.outer == nil {

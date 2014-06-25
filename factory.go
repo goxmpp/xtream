@@ -5,37 +5,37 @@ import (
 	"sync"
 )
 
-var NodeRegistry = NewRegistry()
+var NodeFactory = NewFactory()
 
-type Registry interface {
+type Factory interface {
 	Add(cons Constructor, outer, inner xml.Name)
 	Get(outer, inner *xml.Name) interface{}
 }
 type Constructor func() interface{}
 
-type outerNodesRegistry struct {
-	reg map[xml.Name]*innerNodesRegistry
+type outerNodesFactory struct {
+	reg map[xml.Name]*innerNodesFactory
 	mx  sync.RWMutex
 }
 
-type innerNodesRegistry struct {
+type innerNodesFactory struct {
 	reg map[xml.Name]Constructor
 	mx  sync.RWMutex
 }
 
-func NewRegistry() *outerNodesRegistry {
-	return &outerNodesRegistry{reg: make(map[xml.Name]*innerNodesRegistry)}
+func NewFactory() *outerNodesFactory {
+	return &outerNodesFactory{reg: make(map[xml.Name]*innerNodesFactory)}
 }
 
-func newINRegistry() *innerNodesRegistry {
-	return &innerNodesRegistry{reg: make(map[xml.Name]Constructor)}
+func newINFactory() *innerNodesFactory {
+	return &innerNodesFactory{reg: make(map[xml.Name]Constructor)}
 }
 
-func (r *outerNodesRegistry) Add(cons Constructor, outer, inner xml.Name) {
+func (r *outerNodesFactory) Add(cons Constructor, outer, inner xml.Name) {
 	r.mx.Lock() // Think about CAS here
 	reg := r.lookup(&outer)
 	if reg == nil {
-		reg = newINRegistry()
+		reg = newINFactory()
 		r.reg[outer] = reg
 	}
 	r.mx.Unlock()
@@ -43,7 +43,7 @@ func (r *outerNodesRegistry) Add(cons Constructor, outer, inner xml.Name) {
 	reg.add(cons, &inner)
 }
 
-func (r *outerNodesRegistry) Get(outer, inner *xml.Name) interface{} {
+func (r *outerNodesFactory) Get(outer, inner *xml.Name) interface{} {
 	r.mx.RLock()
 	reg := r.lookup(outer)
 	r.mx.RUnlock()
@@ -62,7 +62,7 @@ func (r *outerNodesRegistry) Get(outer, inner *xml.Name) interface{} {
 	if ok {
 		obj := cons()
 		if innerEl, ok := obj.(Registrable); ok {
-			innerEl.SetRegistry(r)
+			innerEl.SetFactory(r)
 		}
 		return obj
 	}
@@ -70,7 +70,7 @@ func (r *outerNodesRegistry) Get(outer, inner *xml.Name) interface{} {
 	return nil
 }
 
-func (r *outerNodesRegistry) lookup(node *xml.Name) *innerNodesRegistry {
+func (r *outerNodesFactory) lookup(node *xml.Name) *innerNodesFactory {
 	nsr, ok := r.reg[*node]
 	if !ok {
 		node_anyns := xml.Name{Local: node.Local}
@@ -79,7 +79,7 @@ func (r *outerNodesRegistry) lookup(node *xml.Name) *innerNodesRegistry {
 	return nsr
 }
 
-func (nsr *innerNodesRegistry) add(cons Constructor, node *xml.Name) {
+func (nsr *innerNodesFactory) add(cons Constructor, node *xml.Name) {
 	nsr.mx.Lock()
 	if _, ok := nsr.reg[*node]; !ok {
 		nsr.reg[*node] = cons
