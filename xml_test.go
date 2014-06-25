@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"testing"
 
-	"github.com/azhavnerchik/xtream"
+	"github.com/goxmpp/xtream"
 )
 
 type stream struct {
@@ -13,8 +13,8 @@ type stream struct {
 }
 
 type Message struct {
-	XMLName              xml.Name `xml:"message"`
-	Id                   string   `xml:"id,attr"`
+	XMLName              xml.Name `xml:"test://message message"`
+	Id                   int      `xml:"id,attr"`
 	Type                 string   `xml:"type,attr"`
 	xtream.InnerElements `xml:",any"`
 }
@@ -28,32 +28,63 @@ type Body struct {
 func TestBasic(t *testing.T) {
 	msgName, strmName := xml.Name{Local: "message"}, xml.Name{Local: "stream"}
 
-	xtream.NodeRegistry.Add(func() interface{} {
+	xtream.NodeFactory.Add(func() interface{} {
 		return &Message{InnerElements: xtream.NewElemenets(&msgName)}
 	}, strmName, msgName)
-	xtream.NodeRegistry.Add(func() interface{} {
+	xtream.NodeFactory.Add(func() interface{} {
 		return &Body{}
 	}, msgName, xml.Name{Local: "body"})
 
-	raw_xml := `
-<stream>
-	<message id="10" type="plain" xmlns="asdasd">
+	raw_xml := `<stream>
+	<message xmlns="test://message" id="10" type="plain">
 		<body language="en">some strage <br/>xml</body>
 	</message>
-</stream>
-`
+</stream>`
+
 	s := &stream{InnerElements: xtream.NewElemenets(&strmName)}
 	err := xml.Unmarshal([]byte(raw_xml), s)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	t.Logf("%#v", s)
-	t.Logf("%#v\n", s.Elements())
-	for _, e := range s.Elements() {
-		t.Logf("%#v\n", e)
-		for _, eb := range e.(xtream.InnerElements).Elements() {
-			t.Logf("%#v\n", eb)
-		}
+	assert(t, s.XMLName.Local == "stream", "Wrong top level node unmarshaled")
+
+	els := s.Elements()
+	assert(t, len(els) == 1, "Wrong number of elements unmarshaled at first level")
+
+	msg, ok := els[0].(*Message)
+	assert(t, ok, "First inner node should be a 'message'")
+	assert(t, msg.XMLName.Local == "message", "Tag name 'message' unmarshaled correctly")
+	assert(t, msg.XMLName.Space == "test://message", "Tag name was unmarshaled correctly")
+	assert(t, msg.Id == 10, "Message Id should be 10")
+	assert(t, msg.Type == "plain", "Message type should be 'plain'")
+
+	msg_els := msg.Elements()
+
+	assert(t, len(msg_els) == 1, "Message should contain only one inner element")
+
+	if body, ok := msg_els[0].(*Body); ok {
+		assert(t, body.XMLName.Local == "body", "Tag name 'body' unmarshaled correctly")
+		assert(t, body.XMLName.Space == "test://message", "Tag name was unmarshaled correctly")
+		assert(t, body.Lang == "en", "Language tag should be unmarshaled correctly")
+		assert(t, body.Text == "some strage <br/>xml", "Inner XML text should be valid")
+	} else {
+		t.Fatal("Messages inner element should be 'body'")
+	}
+
+	got, err := xml.MarshalIndent(s, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("Got:    %s", got)
+	t.Logf("Extect: %s", raw_xml)
+
+	assert(t, string(got) == raw_xml, "Original and Marshaled XML don't match")
+}
+
+func assert(t *testing.T, ok bool, msg string) {
+	if !ok {
+		t.Fatal(msg)
 	}
 }
