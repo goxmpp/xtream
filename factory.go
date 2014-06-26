@@ -11,7 +11,7 @@ type Factory interface {
 	Add(cons Constructor, outer, inner xml.Name)
 	Get(outer, inner *xml.Name) interface{}
 }
-type Constructor func() interface{}
+type Constructor func() Element
 
 type outerNodesFactory struct {
 	reg map[xml.Name]*innerNodesFactory
