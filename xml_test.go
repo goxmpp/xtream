@@ -29,7 +29,7 @@ func TestBasic(t *testing.T) {
 	msgName, strmName := xml.Name{Local: "message"}, xml.Name{Local: "stream"}
 
 	xtream.NodeFactory.Add(func() xtream.Element {
-		return &Message{InnerElements: xtream.NewElemenets(&msgName)}
+		return &Message{InnerElements: xtream.NewElements(&msgName)}
 	}, strmName, msgName)
 	xtream.NodeFactory.Add(func() xtream.Element {
 		return &Body{}
@@ -41,7 +41,7 @@ func TestBasic(t *testing.T) {
 	</message>
 </stream>`
 
-	s := &stream{InnerElements: xtream.NewElemenets(&strmName)}
+	s := &stream{InnerElements: xtream.NewElements(&strmName)}
 	err := xml.Unmarshal([]byte(raw_xml), s)
 	if err != nil {
 		t.Fatal(err)

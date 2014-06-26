@@ -28,7 +28,7 @@ type elements struct {
 	rawXML   []*InnerXML
 }
 
-func NewElemenets(outer *xml.Name) *elements {
+func NewElements(outer *xml.Name) *elements {
 	return &elements{
 		outer:    outer,
 		elements: make([]Element, 0),
