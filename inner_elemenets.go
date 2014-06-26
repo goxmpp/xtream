@@ -1,9 +1,6 @@
 package xtream
 
-import (
-	"encoding/xml"
-	"fmt"
-)
+import "encoding/xml"
 
 type InnerElements interface {
 	Elements() []Element
@@ -28,7 +25,7 @@ type elements struct {
 	rawXML   []*InnerXML
 }
 
-func NewElemenets(outer *xml.Name) *elements {
+func NewElements(outer *xml.Name) *elements {
 	return &elements{
 		outer:    outer,
 		elements: make([]Element, 0),
@@ -82,7 +79,7 @@ func (es *elements) decodeElement(d *xml.Decoder, start *xml.StartElement) (inte
 
 	element := es.reg.Get(es.outer, &start.Name)
 	if element == nil {
-		return nil, fmt.Errorf("Unknown tag %s", start.Name.Local)
+		element = &InnerXML{}
 	}
 
 	if err := d.DecodeElement(element, start); err != nil {
