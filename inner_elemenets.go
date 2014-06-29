@@ -18,11 +18,19 @@ type InnerXML struct {
 	XML     string `xml:",innerxml"`
 }
 
+// Implementation of InnerElements interface, which (un)marshals it's elements recursively
 type elements struct {
-	outer    *xml.Name
-	reg      Factory
+	// Name of the containing XML element, set in the constructor
+	outer *xml.Name
+
+	// A factory which can be used to unmarshal inner elements of this element
+	reg Factory
+
+	// Inner elements of this element
 	elements []Element
-	rawXML   []*InnerXML
+
+	// Raw XML (including XMLName) of inner elements that may not be unmarshalled
+	rawXML []*InnerXML
 }
 
 func NewElements(outer *xml.Name) *elements {
@@ -60,6 +68,7 @@ func (es *elements) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 	return nil
 }
 
+// Marshal all the elements and raw XML
 func (es *elements) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if err := e.Encode(es.elements); err != nil {
 		return err
