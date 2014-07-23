@@ -28,10 +28,10 @@ type Body struct {
 func TestBasic(t *testing.T) {
 	msgName, strmName := xml.Name{Local: "message"}, xml.Name{Local: "stream"}
 
-	xtream.NodeFactory.AddNamed(func() xtream.Element {
-		return &Message{InnerElements: xtream.NewElements(&msgName)}
+	xtream.NodeFactory.AddNamed(func(xmlname *xml.Name) xtream.Element {
+		return &Message{InnerElements: xtream.NewElements(xmlname)}
 	}, strmName, msgName)
-	xtream.NodeFactory.Add(func() xtream.Element {
+	xtream.NodeFactory.Add(func(xmlname *xml.Name) xtream.Element {
 		return &Body{}
 	})
 
