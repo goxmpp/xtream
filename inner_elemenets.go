@@ -5,6 +5,7 @@ import "encoding/xml"
 type InnerElements interface {
 	Elements() []Element
 	AddElement(Element)
+	Registrable
 }
 
 type Registrable interface {
