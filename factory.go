@@ -3,6 +3,8 @@ package xtream
 import (
 	"encoding/xml"
 	"log"
+	"reflect"
+	"strings"
 	"sync"
 )
 
@@ -11,13 +13,14 @@ var NodeFactory = NewFactory()
 // Factory pattern interface with a two-level match (outer, inner) of constructors
 type Factory interface {
 	// Register cons as a constructor for an element named inner, inside an element named outer
-	Add(cons Constructor, outer, inner xml.Name)
+	Add(cons Constructor)
+	AddNamed(cons Constructor, outer, inner xml.Name)
 
 	// Construct an element named inner for an outer element named outer
 	Get(outer, inner *xml.Name) Element
 }
 
-type Constructor func() Element
+type Constructor func(*xml.Name) Element
 
 type outerNodesFactory struct {
 	reg map[xml.Name]*innerNodesFactory
@@ -37,7 +40,12 @@ func newINFactory() *innerNodesFactory {
 	return &innerNodesFactory{reg: make(map[xml.Name]Constructor)}
 }
 
-func (r *outerNodesFactory) Add(cons Constructor, outer, inner xml.Name) {
+func (r *outerNodesFactory) Add(cons Constructor) {
+	outer, inner := getNames(cons(nil))
+	r.AddNamed(cons, *outer, *inner)
+}
+
+func (r *outerNodesFactory) AddNamed(cons Constructor, outer, inner xml.Name) {
 	r.mx.Lock() // Think about CAS here
 	reg := r.lookup(&outer)
 	if reg == nil {
@@ -71,7 +79,7 @@ func (r *outerNodesFactory) Get(outer, inner *xml.Name) Element {
 	}
 	reg.mx.RUnlock()
 	if ok {
-		obj := cons()
+		obj := cons(inner)
 		if innerEl, ok := obj.(Registrable); ok {
 			innerEl.SetFactory(r)
 		}
@@ -101,4 +109,35 @@ func (nsr *innerNodesFactory) add(cons Constructor, node *xml.Name) {
 		panic("Node already registered " + node.Local)
 	}
 	nsr.mx.Unlock()
+}
+
+func getNames(o interface{}) (*xml.Name, *xml.Name) {
+	var deref func(tof reflect.Type) reflect.Type
+	deref = func(tof reflect.Type) reflect.Type {
+		if tof.Kind() == reflect.Ptr {
+			return deref(tof.Elem())
+		}
+		return tof
+	}
+
+	if field, ok := deref(reflect.TypeOf(o)).FieldByName("XMLName"); ok {
+		var outer, inner xml.Name
+		for tag, name := range map[string]*xml.Name{"xml": &inner, "parent": &outer} {
+			xmltag := strings.Fields(field.Tag.Get(tag))
+
+			switch len(xmltag) {
+			case 0:
+				panic("Tag " + tag + " should be defined for XMLName")
+			case 1:
+				name.Local = xmltag[0]
+			case 2:
+				name.Space = xmltag[0]
+				name.Local = xmltag[1]
+			}
+		}
+
+		return &outer, &inner
+	}
+
+	panic("XMLName field is missing")
 }

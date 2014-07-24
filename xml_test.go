@@ -20,7 +20,7 @@ type Message struct {
 }
 
 type Body struct {
-	XMLName xml.Name `xml:"body"`
+	XMLName xml.Name `xml:"body" parent:"message"`
 	Lang    string   `xml:"language,attr"`
 	Text    string   `xml:",innerxml"`
 }
@@ -28,12 +28,12 @@ type Body struct {
 func TestBasic(t *testing.T) {
 	msgName, strmName := xml.Name{Local: "message"}, xml.Name{Local: "stream"}
 
-	xtream.NodeFactory.Add(func() xtream.Element {
-		return &Message{InnerElements: xtream.NewElements(&msgName)}
+	xtream.NodeFactory.AddNamed(func(xmlname *xml.Name) xtream.Element {
+		return &Message{InnerElements: xtream.NewElements(xmlname)}
 	}, strmName, msgName)
-	xtream.NodeFactory.Add(func() xtream.Element {
+	xtream.NodeFactory.Add(func(xmlname *xml.Name) xtream.Element {
 		return &Body{}
-	}, msgName, xml.Name{Local: "body"})
+	})
 
 	raw_xml := `<stream>
 	<message xmlns="test://message" id="10" type="plain">
