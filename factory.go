@@ -20,7 +20,7 @@ type Factory interface {
 	Get(outer, inner *xml.Name) Element
 }
 
-type Constructor func(*xml.Name) Element
+type Constructor func() Element
 
 type outerNodesFactory struct {
 	reg map[xml.Name]*innerNodesFactory
@@ -41,7 +41,7 @@ func newINFactory() *innerNodesFactory {
 }
 
 func (r *outerNodesFactory) Add(cons Constructor) {
-	outer, inner := getNames(cons(nil))
+	outer, inner := getNames(cons())
 	r.AddNamed(cons, *outer, *inner)
 }
 
@@ -79,8 +79,9 @@ func (r *outerNodesFactory) Get(outer, inner *xml.Name) Element {
 	}
 	reg.mx.RUnlock()
 	if ok {
-		obj := cons(inner)
+		obj := cons()
 		if innerEl, ok := obj.(Registrable); ok {
+			innerEl.SetXMLName(inner)
 			innerEl.SetFactory(r)
 		}
 		return obj
