@@ -10,6 +10,7 @@ type InnerElements interface {
 
 type Registrable interface {
 	SetFactory(Factory)
+	SetXMLName(*xml.Name)
 }
 
 type Element interface{}
@@ -34,12 +35,15 @@ type elements struct {
 	rawXML []*InnerXML
 }
 
-func NewElements(outer *xml.Name) *elements {
+func NewElements() *elements {
 	return &elements{
-		outer:    outer,
 		elements: make([]Element, 0),
 		rawXML:   make([]*InnerXML, 0),
 	}
+}
+
+func (es *elements) SetXMLName(outer *xml.Name) {
+	es.outer = outer
 }
 
 func (es *elements) SetFactory(reg Factory) {
