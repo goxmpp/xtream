@@ -73,7 +73,7 @@ func (r *outerNodesFactory) Get(outer, inner *xml.Name) Element {
 	reg.mx.RLock()
 	cons, ok := reg.reg[*inner]
 	if !ok {
-		log.Printf("outerNodesFactory#Get: qualified XML name search miss for %#v > %#v\n", outer, inner)
+		log.Printf("innerNodesFactory#Get: qualified XML name search miss for %#v > %#v\n", outer, inner)
 		inner_anyns := xml.Name{Local: inner.Local}
 		cons, ok = reg.reg[inner_anyns]
 	}
@@ -86,7 +86,7 @@ func (r *outerNodesFactory) Get(outer, inner *xml.Name) Element {
 		}
 		return obj
 	} else {
-		log.Printf("outerNodesFactory#Get: XML name search miss for %#v > %#v\n", outer, inner)
+		log.Printf("innerNodesFactory#Get: XML name search miss for %#v > %#v\n", outer, inner)
 	}
 
 	return nil
